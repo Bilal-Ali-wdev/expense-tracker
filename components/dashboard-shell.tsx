@@ -4,6 +4,8 @@ import { useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 
 type SettingsState = {
+  carName: string;
+  carModel: string;
   petrolPrice: number;
   mileageWithoutAC: number;
   mileageWithAC: number;
@@ -13,6 +15,7 @@ type SettingsState = {
 type RideRecord = {
   id: string;
   createdAt: string;
+  deletedAt?: string | null;
   pickupDistance: number;
   customerDistance: number;
   extraDistance: number;
@@ -34,7 +37,19 @@ type RideRecord = {
   netProfit: number;
 };
 
+type CarRecord = {
+  id: string;
+  name: string;
+  model: string;
+  imageUrl: string;
+  mileageWithoutAC: number;
+  mileageWithAC: number;
+  createdAt: string;
+};
+
 const defaultSettings: SettingsState = {
+  carName: "My car",
+  carModel: "",
   petrolPrice: 300,
   mileageWithoutAC: 22,
   mileageWithAC: 17,
@@ -104,63 +119,165 @@ export function DashboardShell({
   >("overview");
   const [settings, setSettings] = useState<SettingsState>(defaultSettings);
   const [rides, setRides] = useState<RideRecord[]>([]);
+  const [editingRideId, setEditingRideId] = useState<string | null>(null);
+  const [deleteCandidate, setDeleteCandidate] = useState<RideRecord | null>(
+    null,
+  );
+  const [recoverCandidate, setRecoverCandidate] = useState<RideRecord | null>(
+    null,
+  );
+  const [showPetrolPrompt, setShowPetrolPrompt] = useState(false);
+  const [petrolPromptValue, setPetrolPromptValue] = useState(
+    String(defaultSettings.petrolPrice),
+  );
+  const [cars, setCars] = useState<CarRecord[]>([]);
+  const [settingsTab, setSettingsTab] = useState<
+    "fuel" | "commission" | "cars"
+  >("fuel");
+  const [selectedCar, setSelectedCar] = useState<CarRecord | null>(null);
+  const [carForm, setCarForm] = useState({
+    name: "",
+    model: "",
+    imageUrl:
+      "https://images.unsplash.com/photo-1549317661-bd32c8ce0db2?auto=format&fit=crop&w=900&q=85",
+    mileageWithoutAC: "22",
+    mileageWithAC: "17",
+  });
   const [saveStatus, setSaveStatus] = useState("");
+  const [isExtractingScreenshot, setIsExtractingScreenshot] = useState(false);
+  const [screenshotPreview, setScreenshotPreview] = useState("");
+  const [extractionError, setExtractionError] = useState("");
   const [request, setRequest] = useState({
     pickupDistance: "1.6",
     customerDistance: "13.2",
-    extraDistance: "5",
+    extraDistance: "0",
     acUsed: true,
     ridePrice: "890",
-    tip: "50",
-    parking: "50",
+    tip: "0",
+    parking: "0",
     toll: "0",
     otherExpense: "0",
   });
 
   useEffect(() => {
-    const savedSettings = localStorage.getItem(storageKeys.settings);
-    const savedRides = localStorage.getItem(storageKeys.rides);
-
-    if (savedSettings) {
-      try {
-        setSettings({ ...defaultSettings, ...JSON.parse(savedSettings) });
-      } catch {
-        setSettings(defaultSettings);
-      }
-    } else {
-      setSettings(defaultSettings);
+    const promptKey = `indrive-petrol-prompt-${user.username}`;
+    if (!sessionStorage.getItem(promptKey)) {
+      sessionStorage.setItem(promptKey, "shown");
+      setShowPetrolPrompt(true);
     }
+  }, [user.username]);
 
-    if (savedRides) {
+  useEffect(() => {
+    let isActive = true;
+
+    const loadData = async () => {
       try {
-        setRides(JSON.parse(savedRides));
+        const [settingsResponse, ridesResponse, carsResponse] =
+          await Promise.all([
+            fetch("/api/settings"),
+            fetch("/api/rides"),
+            fetch("/api/cars"),
+          ]);
+        const settingsPayload = await settingsResponse.json();
+        const ridesPayload = await ridesResponse.json();
+        const carsPayload = await carsResponse.json();
+
+        if (!isActive) return;
+
+        if (settingsResponse.ok && settingsPayload.settings) {
+          const loadedSettings = {
+            ...defaultSettings,
+            ...settingsPayload.settings,
+          };
+          setSettings(loadedSettings);
+          setPetrolPromptValue(String(loadedSettings.petrolPrice));
+          localStorage.setItem(
+            storageKeys.settings,
+            JSON.stringify(loadedSettings),
+          );
+        } else {
+          const savedSettings = localStorage.getItem(storageKeys.settings);
+          setSettings(
+            savedSettings
+              ? { ...defaultSettings, ...JSON.parse(savedSettings) }
+              : defaultSettings,
+          );
+          setPetrolPromptValue(
+            String(
+              savedSettings
+                ? JSON.parse(savedSettings).petrolPrice
+                : defaultSettings.petrolPrice,
+            ),
+          );
+        }
+
+        if (ridesResponse.ok && Array.isArray(ridesPayload.rides)) {
+          setRides(ridesPayload.rides);
+          localStorage.setItem(
+            storageKeys.rides,
+            JSON.stringify(ridesPayload.rides),
+          );
+        } else {
+          const savedRides = localStorage.getItem(storageKeys.rides);
+          setRides(savedRides ? JSON.parse(savedRides) : []);
+        }
+
+        if (carsResponse.ok && Array.isArray(carsPayload.cars)) {
+          setCars(carsPayload.cars);
+        }
       } catch {
-        setRides([]);
+        const savedSettings = localStorage.getItem(storageKeys.settings);
+        const savedRides = localStorage.getItem(storageKeys.rides);
+
+        if (!isActive) return;
+
+        setSettings(
+          savedSettings
+            ? { ...defaultSettings, ...JSON.parse(savedSettings) }
+            : defaultSettings,
+        );
+        setRides(savedRides ? JSON.parse(savedRides) : []);
       }
-    } else {
-      setRides([]);
-    }
+    };
+
+    void loadData();
+
+    return () => {
+      isActive = false;
+    };
   }, [user.username, storageKeys.settings, storageKeys.rides]);
 
+  const activeRides = rides.filter((ride) => !ride.deletedAt);
+  const deletedRides = rides.filter((ride) => ride.deletedAt);
+
   const totals = useMemo(() => {
-    const totalRides = rides.length;
-    const totalRevenue = rides.reduce((sum, ride) => sum + ride.ridePrice, 0);
-    const totalTips = rides.reduce((sum, ride) => sum + ride.tip, 0);
-    const totalCommission = rides.reduce(
+    const totalRides = activeRides.length;
+    const totalRevenue = activeRides.reduce(
+      (sum, ride) => sum + ride.ridePrice,
+      0,
+    );
+    const totalTips = activeRides.reduce((sum, ride) => sum + ride.tip, 0);
+    const totalCommission = activeRides.reduce(
       (sum, ride) => sum + ride.commissionAmount,
       0,
     );
-    const totalFuel = rides.reduce((sum, ride) => sum + ride.fuelCost, 0);
-    const totalOtherExpenses = rides.reduce(
+    const totalFuel = activeRides.reduce((sum, ride) => sum + ride.fuelCost, 0);
+    const totalOtherExpenses = activeRides.reduce(
       (sum, ride) => sum + ride.totalOtherExpenses,
       0,
     );
-    const totalDistance = rides.reduce(
+    const totalDistance = activeRides.reduce(
       (sum, ride) => sum + ride.totalDistance,
       0,
     );
-    const totalFuelUsed = rides.reduce((sum, ride) => sum + ride.fuelUsed, 0);
-    const totalProfit = rides.reduce((sum, ride) => sum + ride.netProfit, 0);
+    const totalFuelUsed = activeRides.reduce(
+      (sum, ride) => sum + ride.fuelUsed,
+      0,
+    );
+    const totalProfit = activeRides.reduce(
+      (sum, ride) => sum + ride.netProfit,
+      0,
+    );
 
     return {
       totalRides,
@@ -173,7 +290,7 @@ export function DashboardShell({
       totalFuelUsed,
       totalProfit,
     };
-  }, [rides]);
+  }, [activeRides]);
 
   const summary = useMemo(() => {
     const pickupDistance = Number(request.pickupDistance || 0);
@@ -228,19 +345,216 @@ export function DashboardShell({
   }, [request, settings]);
 
   const handleLogout = async () => {
+    sessionStorage.removeItem(`indrive-petrol-prompt-${user.username}`);
     await fetch("/api/auth/logout", { method: "POST" });
     router.refresh();
   };
 
-  const handleSaveSettings = () => {
+  const handleScreenshotUpload = async (
+    event: React.ChangeEvent<HTMLInputElement>,
+  ) => {
+    const image = event.target.files?.[0];
+    event.target.value = "";
+
+    if (!image) return;
+    if (!image.type.startsWith("image/")) {
+      setExtractionError("Choose a valid image screenshot.");
+      return;
+    }
+    if (image.size > 10 * 1024 * 1024) {
+      setExtractionError("Screenshot must be smaller than 10 MB.");
+      return;
+    }
+
+    setScreenshotPreview(URL.createObjectURL(image));
+    setExtractionError("");
+    setIsExtractingScreenshot(true);
+
+    try {
+      const formData = new FormData();
+      formData.append("image", image);
+      const response = await fetch("/api/rides/extract", {
+        method: "POST",
+        body: formData,
+      });
+      const payload = await response.json();
+
+      if (!response.ok || !payload.ride) {
+        throw new Error(payload.error || "Could not read this screenshot.");
+      }
+
+      setRequest((current) => ({
+        ...current,
+        pickupDistance: String(payload.ride.pickupDistance),
+        customerDistance: String(payload.ride.customerDistance),
+        ridePrice: String(payload.ride.ridePrice),
+        acUsed: payload.ride.acUsed,
+      }));
+      setSaveStatus("Screenshot details added to the form");
+      window.setTimeout(() => setSaveStatus(""), 2200);
+    } catch (error) {
+      setExtractionError(
+        error instanceof Error
+          ? error.message
+          : "Could not read this screenshot.",
+      );
+    } finally {
+      setIsExtractingScreenshot(false);
+    }
+  };
+
+  const handlePetrolPromptSave = async () => {
+    const petrolPrice = Number(petrolPromptValue);
+    if (!Number.isFinite(petrolPrice) || petrolPrice < 0) return;
+
+    const nextSettings = { ...settings, petrolPrice };
+    setSettings(nextSettings);
+    localStorage.setItem(storageKeys.settings, JSON.stringify(nextSettings));
+
+    try {
+      await fetch("/api/settings", {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(nextSettings),
+      });
+    } finally {
+      setShowPetrolPrompt(false);
+    }
+  };
+
+  const handleSaveSettings = async () => {
     localStorage.setItem(storageKeys.settings, JSON.stringify(settings));
-    setSaveStatus("Settings saved");
+
+    try {
+      const response = await fetch("/api/settings", {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(settings),
+      });
+
+      if (!response.ok) throw new Error("Unable to save settings");
+
+      const payload = await response.json();
+      if (payload.settings) {
+        const savedSettings = { ...defaultSettings, ...payload.settings };
+        setSettings(savedSettings);
+        localStorage.setItem(
+          storageKeys.settings,
+          JSON.stringify(savedSettings),
+        );
+      }
+      setSaveStatus("Settings saved to database");
+    } catch {
+      setSaveStatus("Saved on this device");
+    }
+
     window.setTimeout(() => setSaveStatus(""), 1500);
   };
 
-  const handleSaveRide = () => {
-    const newRide: RideRecord = {
-      id: `${Date.now()}`,
+  const handleCreateCar = async () => {
+    if (!carForm.name.trim() || !carForm.model.trim()) {
+      setSaveStatus("Car name and model are required");
+      window.setTimeout(() => setSaveStatus(""), 1800);
+      return;
+    }
+
+    try {
+      const response = await fetch("/api/cars", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          ...carForm,
+          mileageWithoutAC: Number(carForm.mileageWithoutAC),
+          mileageWithAC: Number(carForm.mileageWithAC),
+        }),
+      });
+
+      const payload = await response.json();
+      if (!response.ok || !payload.car)
+        throw new Error(payload.error || "Unable to create car");
+
+      setCars((current) => [payload.car, ...current]);
+      setSettings((current) => ({
+        ...current,
+        carName: payload.car.name,
+        carModel: payload.car.model,
+        mileageWithoutAC: payload.car.mileageWithoutAC,
+        mileageWithAC: payload.car.mileageWithAC,
+      }));
+      setSelectedCar(payload.car);
+      setSaveStatus("Car created");
+      setCarForm((current) => ({ ...current, name: "", model: "" }));
+    } catch (error) {
+      setSaveStatus(
+        error instanceof Error ? error.message : "Unable to create car",
+      );
+    }
+
+    window.setTimeout(() => setSaveStatus(""), 1800);
+  };
+
+  const handleSelectCar = (car: CarRecord) => {
+    setSelectedCar(car);
+    setSettings((current) => ({
+      ...current,
+      carName: car.name,
+      carModel: car.model,
+      mileageWithoutAC: car.mileageWithoutAC,
+      mileageWithAC: car.mileageWithAC,
+    }));
+    setSettingsTab("cars");
+  };
+
+  const handleEditRide = (ride: RideRecord) => {
+    setEditingRideId(ride.id);
+    setRequest({
+      pickupDistance: String(ride.pickupDistance),
+      customerDistance: String(ride.customerDistance),
+      extraDistance: String(ride.extraDistance),
+      acUsed: ride.acUsed,
+      ridePrice: String(ride.ridePrice),
+      tip: String(ride.tip),
+      parking: String(ride.parking),
+      toll: String(ride.toll),
+      otherExpense: String(ride.otherExpense),
+    });
+  };
+
+  const handleRideFlag = async (
+    ride: RideRecord,
+    action: "delete" | "recover",
+  ) => {
+    try {
+      const response = await fetch(`/api/rides/${ride.id}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ action }),
+      });
+      const payload = await response.json();
+
+      if (!response.ok || !payload.ride)
+        throw new Error("Unable to update ride");
+      setRides((current) => {
+        const updated = current.map((item) =>
+          item.id === ride.id ? payload.ride : item,
+        );
+        localStorage.setItem(storageKeys.rides, JSON.stringify(updated));
+        return updated;
+      });
+    } catch {
+      const deletedAt = action === "delete" ? new Date().toISOString() : null;
+      setRides((current) => {
+        const updated = current.map((item) =>
+          item.id === ride.id ? { ...item, deletedAt } : item,
+        );
+        localStorage.setItem(storageKeys.rides, JSON.stringify(updated));
+        return updated;
+      });
+    }
+  };
+
+  const handleSaveRide = async () => {
+    const rideToSave = {
       createdAt: new Date().toISOString(),
       pickupDistance: summary.pickupDistance,
       customerDistance: summary.customerDistance,
@@ -263,10 +577,51 @@ export function DashboardShell({
       netProfit: summary.netProfit,
     };
 
-    const updatedRides = [newRide, ...rides];
-    setRides(updatedRides);
-    localStorage.setItem(storageKeys.rides, JSON.stringify(updatedRides));
-    setSection("history");
+    try {
+      const response = await fetch(
+        editingRideId ? `/api/rides/${editingRideId}` : "/api/rides",
+        {
+          method: editingRideId ? "PATCH" : "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(
+            editingRideId ? { ...rideToSave, action: "update" } : rideToSave,
+          ),
+        },
+      );
+
+      if (!response.ok) throw new Error("Unable to save ride");
+
+      const payload = await response.json();
+      const updatedRides = payload.ride
+        ? editingRideId
+          ? rides.map((ride) =>
+              ride.id === editingRideId ? payload.ride : ride,
+            )
+          : [payload.ride, ...rides]
+        : rides;
+      setRides(updatedRides);
+      localStorage.setItem(storageKeys.rides, JSON.stringify(updatedRides));
+      setEditingRideId(null);
+      setSection("history");
+    } catch {
+      if (editingRideId) {
+        const updatedRides = rides.map((ride) =>
+          ride.id === editingRideId
+            ? { id: editingRideId, ...rideToSave }
+            : ride,
+        );
+        setRides(updatedRides);
+        localStorage.setItem(storageKeys.rides, JSON.stringify(updatedRides));
+        setEditingRideId(null);
+        setSection("history");
+        return;
+      }
+      const localRide: RideRecord = { id: `${Date.now()}`, ...rideToSave };
+      const updatedRides = [localRide, ...rides];
+      setRides(updatedRides);
+      localStorage.setItem(storageKeys.rides, JSON.stringify(updatedRides));
+      setSection("history");
+    }
   };
 
   const renderOverview = () => (
@@ -349,10 +704,46 @@ export function DashboardShell({
   const renderAddRide = () => (
     <div className="space-y-4 rounded-[30px] border border-white/10 bg-[#111d1a]/90 p-4 shadow-xl shadow-black/10">
       <div className="flex items-center justify-between">
-        <h2 className="text-lg font-semibold text-white">Add Ride</h2>
+        <h2 className="text-lg font-semibold text-white">
+          {editingRideId ? "Edit Ride" : "Add Ride"}
+        </h2>
         <span className="rounded-full bg-[#d5ff4e]/10 px-2 py-1 text-[10px] font-bold uppercase tracking-[0.2em] text-[#d5ff4e]">
           Live calc
         </span>
+      </div>
+
+      <div className="rounded-3xl border border-[#d5ff4e]/25 bg-[#d5ff4e]/10 p-4">
+        <div className="flex items-start gap-3">
+          <div className="flex-1">
+            <p className="text-sm font-bold text-white">Fill from screenshot</p>
+            <p className="mt-1 text-xs leading-5 text-white/50">
+              Gemini reads Point A, Point B, fare, and Ride A/C from the
+              uploaded image.
+            </p>
+          </div>
+          <label className="cursor-pointer rounded-2xl bg-[#d5ff4e] px-3 py-2 text-xs font-black text-[#101812] hover:bg-[#e2ff82]">
+            {isExtractingScreenshot ? "Reading..." : "Upload image"}
+            <input
+              type="file"
+              accept="image/png,image/jpeg,image/webp"
+              onChange={handleScreenshotUpload}
+              disabled={isExtractingScreenshot}
+              className="sr-only"
+            />
+          </label>
+        </div>
+        {screenshotPreview ? (
+          <img
+            src={screenshotPreview}
+            alt="Uploaded ride screenshot"
+            className="mt-3 max-h-48 w-full rounded-2xl object-contain"
+          />
+        ) : null}
+        {extractionError ? (
+          <p className="mt-3 rounded-xl border border-rose-300/30 bg-rose-400/10 px-3 py-2 text-xs text-rose-100">
+            {extractionError}
+          </p>
+        ) : null}
       </div>
 
       <div className="grid grid-cols-2 gap-3">
@@ -389,7 +780,7 @@ export function DashboardShell({
           />
         </label>
         <label className="space-y-1 text-sm text-slate-300">
-          <span>Extra distance</span>
+          <span>Extra travel</span>
           <input
             type="number"
             step="0.1"
@@ -553,26 +944,38 @@ export function DashboardShell({
         onClick={handleSaveRide}
         className="w-full rounded-2xl bg-[#d5ff4e] px-4 py-3 text-base font-black text-[#101812] transition hover:bg-[#e2ff82]"
       >
-        Save Ride
+        {editingRideId ? "Update Ride" : "Save Ride"}
       </button>
+      {editingRideId ? (
+        <button
+          type="button"
+          onClick={() => {
+            setEditingRideId(null);
+            setSection("history");
+          }}
+          className="w-full rounded-2xl border border-white/15 px-4 py-3 text-sm font-bold text-white/60"
+        >
+          Cancel edit
+        </button>
+      ) : null}
     </div>
   );
 
   const renderHistory = () => (
-    <div className="space-y-3 rounded-[30px] border border-white/10 bg-[#111d1a]/90 p-4 shadow-xl shadow-black/10">
+    <div className="space-y-5 rounded-[30px] border border-white/10 bg-[#111d1a]/90 p-4 shadow-xl shadow-black/10">
       <div className="flex items-center justify-between">
         <h2 className="text-lg font-semibold text-white">Ride History</h2>
         <span className="rounded-full bg-white/10 px-2 py-1 text-[10px] font-bold uppercase tracking-[0.2em] text-white/60">
-          {rides.length}
+          {activeRides.length}
         </span>
       </div>
 
-      {rides.length === 0 ? (
+      {activeRides.length === 0 ? (
         <div className="rounded-2xl border border-dashed border-slate-700 bg-slate-950/50 p-4 text-sm text-slate-300">
           No rides saved yet.
         </div>
       ) : (
-        rides.map((ride) => (
+        activeRides.map((ride) => (
           <div
             key={ride.id}
             className="rounded-2xl border border-white/10 bg-black/20 p-3"
@@ -591,16 +994,88 @@ export function DashboardShell({
               <span>Distance</span>
               <strong>{ride.totalDistance.toFixed(1)} km</strong>
             </div>
+            <div className="mt-3 flex gap-2 border-t border-white/10 pt-3">
+              <button
+                type="button"
+                onClick={() => handleEditRide(ride)}
+                className="flex-1 rounded-xl border border-white/15 px-3 py-2 text-xs font-bold text-white/70 hover:bg-white/10 hover:text-white"
+              >
+                Edit
+              </button>
+              <button
+                type="button"
+                onClick={() => setDeleteCandidate(ride)}
+                className="flex-1 rounded-xl border border-rose-300/30 px-3 py-2 text-xs font-bold text-rose-200 hover:bg-rose-400/10"
+              >
+                Delete
+              </button>
+            </div>
           </div>
         ))
       )}
+
+      <div className="border-t border-white/10 pt-4">
+        <div className="mb-3 flex items-center justify-between">
+          <div>
+            <h3 className="text-sm font-bold text-white">Deleted Items</h3>
+            <p className="mt-1 text-xs text-white/40">
+              Deleted rides can be recovered for 30 days.
+            </p>
+          </div>
+          <span className="rounded-full bg-rose-400/10 px-2 py-1 text-[10px] font-bold text-rose-200">
+            {deletedRides.length}
+          </span>
+        </div>
+        {deletedRides.length === 0 ? (
+          <p className="rounded-2xl border border-dashed border-white/10 p-3 text-xs text-white/35">
+            No deleted rides.
+          </p>
+        ) : (
+          <div className="space-y-2">
+            {deletedRides.map((ride) => (
+              <div
+                key={ride.id}
+                className="flex items-center justify-between rounded-2xl border border-rose-200/15 bg-rose-200/5 p-3"
+              >
+                <div>
+                  <p className="text-sm font-semibold text-white/75">
+                    Rs. {roundMoney(ride.ridePrice)}
+                  </p>
+                  <p className="mt-1 text-xs text-white/35">
+                    Marked deleted{" "}
+                    {ride.deletedAt
+                      ? new Date(ride.deletedAt).toLocaleDateString()
+                      : "recently"}
+                  </p>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => setRecoverCandidate(ride)}
+                  className="rounded-xl border border-[#d5ff4e]/40 px-3 py-2 text-xs font-bold text-[#d5ff4e] hover:bg-[#d5ff4e]/10"
+                >
+                  Recover
+                </button>
+              </div>
+            ))}
+          </div>
+        )}
+        <p className="mt-3 text-[11px] text-white/30">
+          After 30 days, deleted rides may be permanently removed. Automatic
+          permanent deletion is not enabled.
+        </p>
+      </div>
     </div>
   );
 
   const renderSettings = () => (
-    <div className="space-y-4 rounded-[30px] border border-white/10 bg-[#111d1a]/90 p-4 shadow-xl shadow-black/10">
+    <div className="space-y-5 rounded-[30px] border border-white/10 bg-[#111d1a]/90 p-4 shadow-xl shadow-black/10">
       <div className="flex items-center justify-between">
-        <h2 className="text-lg font-semibold text-white">Settings</h2>
+        <div>
+          <p className="text-[10px] font-bold uppercase tracking-[0.2em] text-[#d5ff4e]">
+            Preferences
+          </p>
+          <h2 className="mt-1 text-xl font-black text-white">Settings</h2>
+        </div>
         <button
           type="button"
           onClick={handleSaveSettings}
@@ -610,79 +1085,238 @@ export function DashboardShell({
         </button>
       </div>
 
+      <div className="grid grid-cols-3 gap-1 rounded-2xl bg-black/20 p-1">
+        {[
+          ["fuel", "Fuel price"],
+          ["commission", "Commission"],
+          ["cars", "Cars"],
+        ].map(([tab, label]) => (
+          <button
+            key={tab}
+            type="button"
+            onClick={() =>
+              setSettingsTab(tab as "fuel" | "commission" | "cars")
+            }
+            className={`rounded-xl px-2 py-2 text-xs font-bold transition ${
+              settingsTab === tab
+                ? "bg-[#d5ff4e] text-[#101812]"
+                : "text-white/50 hover:bg-white/5 hover:text-white"
+            }`}
+          >
+            {label}
+          </button>
+        ))}
+      </div>
+
       {saveStatus ? (
         <div className="rounded-xl border border-[#d5ff4e]/40 bg-[#d5ff4e]/10 px-3 py-2 text-sm text-[#d5ff4e]">
           {saveStatus}
         </div>
       ) : null}
 
-      <div className="space-y-3">
-        <label className="block text-sm text-slate-300">
-          <span className="mb-1 block">Petrol price (Rs/L)</span>
-          <input
-            type="number"
-            step="1"
-            min="0"
-            value={settings.petrolPrice}
-            onChange={(event) =>
-              setSettings((current) => ({
-                ...current,
-                petrolPrice: Number(event.target.value) || 0,
-              }))
-            }
-            className="w-full rounded-2xl border border-slate-700 bg-slate-950 px-3 py-2 text-white"
-          />
-        </label>
-        <label className="block text-sm text-slate-300">
-          <span className="mb-1 block">Mileage without AC</span>
-          <input
-            type="number"
-            step="0.1"
-            min="0"
-            value={settings.mileageWithoutAC}
-            onChange={(event) =>
-              setSettings((current) => ({
-                ...current,
-                mileageWithoutAC: Number(event.target.value) || 0,
-              }))
-            }
-            className="w-full rounded-2xl border border-slate-700 bg-slate-950 px-3 py-2 text-white"
-          />
-        </label>
-        <label className="block text-sm text-slate-300">
-          <span className="mb-1 block">Mileage with AC</span>
-          <input
-            type="number"
-            step="0.1"
-            min="0"
-            value={settings.mileageWithAC}
-            onChange={(event) =>
-              setSettings((current) => ({
-                ...current,
-                mileageWithAC: Number(event.target.value) || 0,
-              }))
-            }
-            className="w-full rounded-2xl border border-slate-700 bg-slate-950 px-3 py-2 text-white"
-          />
-        </label>
-        <label className="block text-sm text-slate-300">
-          <span className="mb-1 block">InDrive commission %</span>
-          <input
-            type="number"
-            step="0.1"
-            min="0"
-            max="100"
-            value={settings.commissionPercentage}
-            onChange={(event) =>
-              setSettings((current) => ({
-                ...current,
-                commissionPercentage: Number(event.target.value) || 0,
-              }))
-            }
-            className="w-full rounded-2xl border border-slate-700 bg-slate-950 px-3 py-2 text-white"
-          />
-        </label>
-      </div>
+      {settingsTab === "fuel" ? (
+        <div className="space-y-4">
+          <div className="rounded-3xl border border-[#d5ff4e]/25 bg-[#d5ff4e]/10 p-5">
+            <p className="text-[10px] font-bold uppercase tracking-[0.22em] text-[#d5ff4e]">
+              Current petrol price
+            </p>
+            <p className="mt-3 text-4xl font-black text-white">
+              Rs. {settings.petrolPrice.toFixed(2)}
+            </p>
+            <p className="mt-1 text-sm text-white/55">Per litre</p>
+          </div>
+          <label className="block text-sm text-slate-300">
+            <span className="mb-1 block">Update petrol price (Rs/L)</span>
+            <input
+              type="number"
+              step="0.01"
+              min="0"
+              value={settings.petrolPrice}
+              onChange={(event) =>
+                setSettings((current) => ({
+                  ...current,
+                  petrolPrice: Number(event.target.value) || 0,
+                }))
+              }
+              className="w-full rounded-2xl border border-slate-700 bg-slate-950 px-3 py-2 text-white"
+            />
+          </label>
+        </div>
+      ) : null}
+
+      {settingsTab === "commission" ? (
+        <div className="space-y-4">
+          <div className="rounded-3xl border border-white/10 bg-white/5 p-5">
+            <p className="text-[10px] font-bold uppercase tracking-[0.22em] text-white/45">
+              Platform deduction
+            </p>
+            <p className="mt-3 text-4xl font-black text-white">
+              {settings.commissionPercentage.toFixed(1)}%
+            </p>
+            <p className="mt-1 text-sm text-white/55">
+              Applied to every saved ride
+            </p>
+          </div>
+          <label className="block text-sm text-slate-300">
+            <span className="mb-1 block">Update commission percentage</span>
+            <input
+              type="number"
+              step="0.1"
+              min="0"
+              max="100"
+              value={settings.commissionPercentage}
+              onChange={(event) =>
+                setSettings((current) => ({
+                  ...current,
+                  commissionPercentage: Number(event.target.value) || 0,
+                }))
+              }
+              className="w-full rounded-2xl border border-slate-700 bg-slate-950 px-3 py-2 text-white"
+            />
+          </label>
+        </div>
+      ) : null}
+
+      {settingsTab === "cars" ? (
+        <div className="space-y-4">
+          <div className="rounded-3xl border border-white/10 bg-white/5 p-4">
+            <div className="mb-3 flex items-center justify-between">
+              <div>
+                <p className="text-sm font-bold text-white">Create a car</p>
+                <p className="mt-1 text-xs text-white/45">
+                  Save averages for accurate fuel calculations.
+                </p>
+              </div>
+              <span className="rounded-full bg-[#d5ff4e]/10 px-2 py-1 text-[10px] font-bold uppercase tracking-[0.16em] text-[#d5ff4e]">
+                New
+              </span>
+            </div>
+            <div className="grid gap-3 sm:grid-cols-2">
+              <label className="space-y-1 text-xs font-semibold text-white/65">
+                <span>Car name</span>
+                <input
+                  id="car-name"
+                  value={carForm.name}
+                  onChange={(event) =>
+                    setCarForm((current) => ({
+                      ...current,
+                      name: event.target.value,
+                    }))
+                  }
+                  className="w-full rounded-2xl border border-slate-700 bg-slate-950 px-3 py-2 text-sm text-white"
+                />
+              </label>
+              <label className="space-y-1 text-xs font-semibold text-white/65">
+                <span>Car model</span>
+                <input
+                  id="car-model"
+                  value={carForm.model}
+                  onChange={(event) =>
+                    setCarForm((current) => ({
+                      ...current,
+                      model: event.target.value,
+                    }))
+                  }
+                  className="w-full rounded-2xl border border-slate-700 bg-slate-950 px-3 py-2 text-sm text-white"
+                />
+              </label>
+              <label className="space-y-1 text-xs font-semibold text-white/65">
+                <span>Average without AC (km/L)</span>
+                <input
+                  id="car-mileage-without-ac"
+                  type="number"
+                  min="0"
+                  step="0.1"
+                  value={carForm.mileageWithoutAC}
+                  onChange={(event) =>
+                    setCarForm((current) => ({
+                      ...current,
+                      mileageWithoutAC: event.target.value,
+                    }))
+                  }
+                  className="w-full rounded-2xl border border-slate-700 bg-slate-950 px-3 py-2 text-sm text-white"
+                />
+              </label>
+              <label className="space-y-1 text-xs font-semibold text-white/65">
+                <span>Average with AC (km/L)</span>
+                <input
+                  id="car-mileage-with-ac"
+                  type="number"
+                  min="0"
+                  step="0.1"
+                  value={carForm.mileageWithAC}
+                  onChange={(event) =>
+                    setCarForm((current) => ({
+                      ...current,
+                      mileageWithAC: event.target.value,
+                    }))
+                  }
+                  className="w-full rounded-2xl border border-slate-700 bg-slate-950 px-3 py-2 text-sm text-white"
+                />
+              </label>
+            </div>
+            <button
+              type="button"
+              onClick={handleCreateCar}
+              className="mt-3 w-full rounded-2xl bg-[#d5ff4e] px-4 py-3 text-sm font-black text-[#101812]"
+            >
+              Create car
+            </button>
+          </div>
+
+          {selectedCar ? (
+            <div className="overflow-hidden rounded-3xl border border-[#d5ff4e]/35 bg-[#d5ff4e]/10">
+              <img
+                src={selectedCar.imageUrl}
+                alt={selectedCar.model}
+                className="h-40 w-full object-cover"
+              />
+              <div className="p-4">
+                <p className="text-[10px] font-bold uppercase tracking-[0.2em] text-[#d5ff4e]">
+                  Selected car
+                </p>
+                <p className="mt-1 text-xl font-black text-white">
+                  {selectedCar.name}
+                </p>
+                <p className="text-sm text-white/55">
+                  {selectedCar.model} · {selectedCar.mileageWithAC} km/L with AC
+                </p>
+              </div>
+            </div>
+          ) : null}
+
+          <div className="space-y-3">
+            {cars.length === 0 ? (
+              <p className="rounded-2xl border border-dashed border-white/15 p-4 text-sm text-white/45">
+                No cars saved yet.
+              </p>
+            ) : null}
+            {cars.map((car) => (
+              <div
+                key={car.id}
+                className="flex items-center gap-3 rounded-2xl border border-white/10 bg-black/20 p-3"
+              >
+                <img
+                  src={car.imageUrl}
+                  alt={car.model}
+                  className="h-16 w-20 rounded-xl object-cover"
+                />
+                <div className="min-w-0 flex-1">
+                  <p className="truncate font-bold text-white">{car.name}</p>
+                  <p className="truncate text-xs text-white/45">{car.model}</p>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => handleSelectCar(car)}
+                  className="rounded-full border border-[#d5ff4e]/40 px-3 py-2 text-xs font-bold text-[#d5ff4e]"
+                >
+                  View
+                </button>
+              </div>
+            ))}
+          </div>
+        </div>
+      ) : null}
     </div>
   );
 
@@ -705,13 +1339,23 @@ export function DashboardShell({
               </h1>
             </div>
           </div>
-          <button
-            type="button"
-            onClick={handleLogout}
-            className="rounded-full border border-[#9fbdad] bg-[#edf6f0]/70 px-3 py-2 text-xs font-bold uppercase tracking-[0.12em] text-[#49675b] transition hover:border-[#6d9782] hover:text-[#17312a]"
-          >
-            Logout
-          </button>
+          <div className="flex items-center gap-2">
+            <div className="rounded-[8px] border border-[#9fbdad] bg-[#edf6f0]/70 px-3 py-2 text-right">
+              <p className="text-[9px] font-bold uppercase tracking-[0.12em] text-[#668176]">
+                Fuel price
+              </p>
+              <p className="text-xs font-black text-[#17312a]">
+                Rs. {settings.petrolPrice.toFixed(2)} /L
+              </p>
+            </div>
+            <button
+              type="button"
+              onClick={handleLogout}
+              className="rounded-[8px] border border-[#9fbdad] bg-[#edf6f0]/70 px-3 py-[10px] text-xs font-bold uppercase tracking-[0.12em] text-[#49675b] transition hover:border-[#6d9782] hover:text-[#17312a]"
+            >
+              Logout
+            </button>
+          </div>
         </div>
 
         <div className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_280px] lg:items-start">
@@ -795,6 +1439,238 @@ export function DashboardShell({
             </button>
           </nav>
         </div>
+
+        {showPetrolPrompt ? (
+          <div className="fixed inset-0 z-[60] flex items-center justify-center bg-[#07100d]/70 px-4 backdrop-blur-sm">
+            <div className="relative w-full max-w-md rounded-[30px] border border-white/15 bg-[#13221e] p-6 shadow-2xl shadow-black/40">
+              <button
+                type="button"
+                aria-label="Close petrol price popup"
+                onClick={() => setShowPetrolPrompt(false)}
+                className="absolute right-4 top-4 rounded-full border border-white/15 px-3 py-1 text-lg leading-none text-white/55 hover:bg-white/10 hover:text-white"
+              >
+                x
+              </button>
+              <p className="text-[10px] font-bold uppercase tracking-[0.22em] text-[#d5ff4e]">
+                Daily setup
+              </p>
+              <h2 className="mt-2 pr-8 text-2xl font-black text-white">
+                Today&apos;s petrol price
+              </h2>
+              <p className="mt-2 text-sm leading-6 text-white/55">
+                Enter today&apos;s price so every ride calculation uses the
+                correct fuel cost.
+              </p>
+              <label className="mt-5 block text-sm font-semibold text-white/70">
+                Petrol price (Rs/L)
+                <input
+                  autoFocus
+                  type="number"
+                  min="0"
+                  step="0.01"
+                  value={petrolPromptValue}
+                  onChange={(event) => setPetrolPromptValue(event.target.value)}
+                  className="mt-2 w-full rounded-2xl border border-white/15 bg-black/20 px-4 py-3 text-xl font-bold text-white outline-none focus:border-[#d5ff4e]"
+                />
+              </label>
+              <div className="mt-5 flex gap-2">
+                <button
+                  type="button"
+                  onClick={() => setShowPetrolPrompt(false)}
+                  className="flex-1 rounded-2xl border border-white/15 px-4 py-3 text-sm font-bold text-white/65 hover:bg-white/10"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="button"
+                  onClick={() => void handlePetrolPromptSave()}
+                  className="flex-1 rounded-2xl bg-[#d5ff4e] px-4 py-3 text-sm font-black text-[#101812]"
+                >
+                  Save price
+                </button>
+              </div>
+            </div>
+          </div>
+        ) : null}
+
+        {deleteCandidate ? (
+          <div className="fixed inset-0 z-50 flex items-center justify-center bg-[#07100d]/70 px-4 backdrop-blur-sm">
+            <div className="w-full max-w-sm rounded-[28px] border border-white/15 bg-[#13221e] p-5 shadow-2xl shadow-black/40">
+              <p className="text-[10px] font-bold uppercase tracking-[0.2em] text-rose-200">
+                Delete ride
+              </p>
+              <h2 className="mt-2 text-2xl font-black text-white">
+                Delete this ride?
+              </h2>
+              <p className="mt-2 text-sm leading-6 text-white/55">
+                This ride will move to Deleted Items. You can recover it later.
+              </p>
+              <div className="mt-5 flex gap-2">
+                <button
+                  type="button"
+                  onClick={() => setDeleteCandidate(null)}
+                  className="flex-1 rounded-2xl border border-white/15 px-4 py-3 text-sm font-bold text-white/65"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="button"
+                  onClick={async () => {
+                    await handleRideFlag(deleteCandidate, "delete");
+                    setDeleteCandidate(null);
+                  }}
+                  className="flex-1 rounded-2xl bg-rose-400 px-4 py-3 text-sm font-black text-[#24100e]"
+                >
+                  Delete ride
+                </button>
+              </div>
+            </div>
+          </div>
+        ) : null}
+
+        {recoverCandidate ? (
+          <div className="fixed inset-0 z-50 flex items-center justify-center bg-[#07100d]/70 px-4 backdrop-blur-sm">
+            <div className="w-full max-w-sm rounded-[28px] border border-white/15 bg-[#13221e] p-5 shadow-2xl shadow-black/40">
+              <p className="text-[10px] font-bold uppercase tracking-[0.2em] text-[#d5ff4e]">
+                Recover ride
+              </p>
+              <h2 className="mt-2 text-2xl font-black text-white">
+                Recover this ride?
+              </h2>
+              <p className="mt-2 text-sm leading-6 text-white/55">
+                This ride will return to your active Ride History and dashboard
+                totals.
+              </p>
+              <div className="mt-5 flex gap-2">
+                <button
+                  type="button"
+                  onClick={() => setRecoverCandidate(null)}
+                  className="flex-1 rounded-2xl border border-white/15 px-4 py-3 text-sm font-bold text-white/65"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="button"
+                  onClick={async () => {
+                    await handleRideFlag(recoverCandidate, "recover");
+                    setRecoverCandidate(null);
+                  }}
+                  className="flex-1 rounded-2xl bg-[#d5ff4e] px-4 py-3 text-sm font-black text-[#101812]"
+                >
+                  Recover ride
+                </button>
+              </div>
+            </div>
+          </div>
+        ) : null}
+
+        {editingRideId ? (
+          <div className="fixed inset-0 z-50 overflow-y-auto bg-[#07100d]/70 px-4 py-8 backdrop-blur-sm">
+            <div className="mx-auto w-full max-w-2xl rounded-[30px] border border-white/15 bg-[#13221e] p-5 shadow-2xl shadow-black/40">
+              <div className="flex items-start justify-between gap-4">
+                <div>
+                  <p className="text-[10px] font-bold uppercase tracking-[0.2em] text-[#d5ff4e]">
+                    Ride details
+                  </p>
+                  <h2 className="mt-1 text-2xl font-black text-white">
+                    Edit ride
+                  </h2>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => setEditingRideId(null)}
+                  className="rounded-full border border-white/15 px-3 py-2 text-xs font-bold text-white/60"
+                >
+                  Close
+                </button>
+              </div>
+
+              <div className="mt-5 grid gap-3 sm:grid-cols-2">
+                {[
+                  ["Pickup distance", "pickupDistance"],
+                  ["Customer trip", "customerDistance"],
+                  ["Extra travel", "extraDistance"],
+                  ["Ride price", "ridePrice"],
+                  ["Tip", "tip"],
+                  ["Parking", "parking"],
+                  ["Toll", "toll"],
+                  ["Other expense", "otherExpense"],
+                ].map(([label, field]) => (
+                  <label
+                    key={field}
+                    className="space-y-1 text-xs font-semibold text-white/65"
+                  >
+                    <span>{label}</span>
+                    <input
+                      type="number"
+                      min="0"
+                      step="0.1"
+                      value={request[field as keyof typeof request] as string}
+                      onChange={(event) =>
+                        setRequest((current) => ({
+                          ...current,
+                          [field]: event.target.value,
+                        }))
+                      }
+                      className="w-full rounded-2xl border border-white/10 bg-black/20 px-3 py-2 text-sm text-white outline-none focus:border-[#d5ff4e]"
+                    />
+                  </label>
+                ))}
+              </div>
+
+              <div className="mt-4 rounded-2xl border border-white/10 bg-black/20 p-3">
+                <p className="mb-2 text-xs font-bold uppercase tracking-[0.16em] text-white/45">
+                  AC status
+                </p>
+                <div className="flex gap-2">
+                  <button
+                    type="button"
+                    onClick={() =>
+                      setRequest((current) => ({ ...current, acUsed: true }))
+                    }
+                    className={`flex-1 rounded-xl border px-3 py-2 text-sm font-bold ${request.acUsed ? "border-[#d5ff4e] bg-[#d5ff4e]/10 text-[#d5ff4e]" : "border-white/10 text-white/50"}`}
+                  >
+                    AC ON
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() =>
+                      setRequest((current) => ({ ...current, acUsed: false }))
+                    }
+                    className={`flex-1 rounded-xl border px-3 py-2 text-sm font-bold ${!request.acUsed ? "border-[#d5ff4e] bg-[#d5ff4e]/10 text-[#d5ff4e]" : "border-white/10 text-white/50"}`}
+                  >
+                    AC OFF
+                  </button>
+                </div>
+              </div>
+
+              <div className="mt-4 rounded-2xl border border-[#d5ff4e]/20 bg-[#d5ff4e]/5 p-4 text-sm text-white/70">
+                <div className="flex justify-between">
+                  <span>Total distance</span>
+                  <strong>{summary.totalDistance.toFixed(1)} km</strong>
+                </div>
+                <div className="mt-2 flex justify-between">
+                  <span>Fuel cost</span>
+                  <strong>Rs. {roundMoney(summary.fuelCost)}</strong>
+                </div>
+                <div className="mt-2 flex justify-between">
+                  <span>Net profit</span>
+                  <strong className="text-[#d5ff4e]">
+                    Rs. {roundMoney(summary.netProfit)}
+                  </strong>
+                </div>
+              </div>
+
+              <button
+                type="button"
+                onClick={() => void handleSaveRide()}
+                className="mt-5 w-full rounded-2xl bg-[#d5ff4e] px-4 py-3 text-sm font-black text-[#101812]"
+              >
+                Save changes
+              </button>
+            </div>
+          </div>
+        ) : null}
       </div>
     </main>
   );

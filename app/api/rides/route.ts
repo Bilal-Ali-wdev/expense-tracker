@@ -32,7 +32,9 @@ function normalizeRide(body: Record<string, unknown>) {
 
   if (
     numericFields.some(
-      (field) => !Number.isFinite(ride[field]) || ride[field] < 0,
+      (field) =>
+        !Number.isFinite(ride[field]) ||
+        (field !== "netProfit" && ride[field] < 0),
     ) ||
     ride.netProfit === undefined
   ) {
@@ -42,10 +44,13 @@ function normalizeRide(body: Record<string, unknown>) {
   return { ...ride, acUsed: Boolean(body.acUsed) };
 }
 
-function responseRide(ride: Record<string, unknown>) {
+function responseRide(value: unknown) {
+  const ride = value as Record<string, unknown>;
+
   return {
     id: String(ride._id),
     createdAt: ride.createdAt,
+    deletedAt: ride.deletedAt || null,
     ...Object.fromEntries(numericFields.map((field) => [field, ride[field]])),
     acUsed: ride.acUsed,
   };

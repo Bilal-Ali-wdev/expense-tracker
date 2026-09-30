@@ -4,6 +4,7 @@ export interface IRide extends mongoose.Document {
   userId: mongoose.Types.ObjectId;
   username: string;
   createdAt: Date;
+  deletedAt?: Date | null;
   pickupDistance: number;
   customerDistance: number;
   extraDistance: number;
@@ -40,6 +41,7 @@ const RideSchema = new Schema<IRide>(
       lowercase: true,
       index: true,
     },
+    deletedAt: { type: Date, default: null, index: true },
     pickupDistance: { type: Number, required: true, min: 0 },
     customerDistance: { type: Number, required: true, min: 0 },
     extraDistance: { type: Number, required: true, min: 0 },
@@ -68,4 +70,12 @@ const RideSchema = new Schema<IRide>(
   { timestamps: true },
 );
 
-export const RideModel = models.Ride || model<IRide>("Ride", RideSchema);
+const cachedRideModel = models.Ride as mongoose.Model<IRide> | undefined;
+
+if (cachedRideModel && !cachedRideModel.schema.path("deletedAt")) {
+  cachedRideModel.schema.add({
+    deletedAt: { type: Date, default: null, index: true },
+  });
+}
+
+export const RideModel = cachedRideModel || model<IRide>("Ride", RideSchema);
