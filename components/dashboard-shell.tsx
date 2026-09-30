@@ -626,7 +626,7 @@ export function DashboardShell({
 
   const renderOverview = () => (
     <>
-      <div className="mb-5 overflow-hidden rounded-[30px] border border-white/10 bg-[#d5ff4e] p-5 text-[#101812] shadow-xl shadow-black/20">
+      <div className="mb-5 overflow-hidden rounded-[8px] border border-white/10 bg-[#d5ff4e] p-5 text-[#101812] shadow-xl shadow-black/20">
         <div className="flex items-start justify-between gap-4">
           <div>
             <p className="text-[10px] font-black uppercase tracking-[0.24em] opacity-60">
@@ -639,7 +639,7 @@ export function DashboardShell({
               Net profit this cycle
             </p>
           </div>
-          <div className="rounded-2xl bg-[#101812]/10 px-3 py-2 text-right">
+          <div className="rounded-[8px] bg-[#101812]/10 px-3 py-2 text-right">
             <p className="text-[10px] font-bold uppercase tracking-[0.16em] opacity-60">
               Rides
             </p>
@@ -652,7 +652,7 @@ export function DashboardShell({
       </div>
 
       <div className="mb-5 grid grid-cols-2 gap-3">
-        <div className="rounded-3xl border border-[#b8d2c4] bg-[#edf6f0] p-4 shadow-sm shadow-[#8faf9f]/20">
+        <div className="rounded-[8px] border border-[#b8d2c4] bg-[#edf6f0] p-4 shadow-sm shadow-[#8faf9f]/20">
           <p className="text-[10px] font-bold uppercase tracking-[0.22em] text-[#5b786c]">
             Revenue
           </p>
@@ -661,7 +661,7 @@ export function DashboardShell({
           </p>
           <p className="mt-1 text-xs text-[#668176]">Gross earnings</p>
         </div>
-        <div className="rounded-3xl border border-[#b8d2c4] bg-[#edf6f0] p-4 shadow-sm shadow-[#8faf9f]/20">
+        <div className="rounded-[8px] border border-[#b8d2c4] bg-[#edf6f0] p-4 shadow-sm shadow-[#8faf9f]/20">
           <p className="text-[10px] font-bold uppercase tracking-[0.22em] text-[#5b786c]">
             Distance
           </p>
@@ -673,25 +673,25 @@ export function DashboardShell({
       </div>
 
       <div className="mb-5 grid grid-cols-2 gap-3 text-sm text-[#17312a]">
-        <div className="rounded-2xl border border-[#b8d2c4] bg-[#c8ded2] p-3">
+        <div className="rounded-[8px] border border-[#b8d2c4] bg-[#c8ded2] p-3">
           <div className="text-[#5b786c]">Tips</div>
           <div className="mt-1 font-semibold">
             Rs. {roundMoney(totals.totalTips)}
           </div>
         </div>
-        <div className="rounded-2xl border border-[#b8d2c4] bg-[#c8ded2] p-3">
+        <div className="rounded-[8px] border border-[#b8d2c4] bg-[#c8ded2] p-3">
           <div className="text-[#5b786c]">Commission</div>
           <div className="mt-1 font-semibold">
             Rs. {roundMoney(totals.totalCommission)}
           </div>
         </div>
-        <div className="rounded-2xl border border-[#b8d2c4] bg-[#c8ded2] p-3">
+        <div className="rounded-[8px] border border-[#b8d2c4] bg-[#c8ded2] p-3">
           <div className="text-[#5b786c]">Fuel</div>
           <div className="mt-1 font-semibold">
             Rs. {roundMoney(totals.totalFuel)}
           </div>
         </div>
-        <div className="rounded-2xl border border-[#b8d2c4] bg-[#c8ded2] p-3">
+        <div className="rounded-[8px] border border-[#b8d2c4] bg-[#c8ded2] p-3">
           <div className="text-[#5b786c]">Fuel used</div>
           <div className="mt-1 font-semibold">
             {totals.totalFuelUsed.toFixed(2)} L
@@ -702,17 +702,17 @@ export function DashboardShell({
   );
 
   const renderAddRide = () => (
-    <div className="space-y-4 rounded-[30px] border border-white/10 bg-[#111d1a]/90 p-4 shadow-xl shadow-black/10">
+    <div className="space-y-4 rounded-[8px] border border-white/10 bg-[#111d1a]/90 p-4 shadow-xl shadow-black/10">
       <div className="flex items-center justify-between">
         <h2 className="text-lg font-semibold text-white">
           {editingRideId ? "Edit Ride" : "Add Ride"}
         </h2>
         <span className="rounded-full bg-[#d5ff4e]/10 px-2 py-1 text-[10px] font-bold uppercase tracking-[0.2em] text-[#d5ff4e]">
-          Live calc
+          Live calculation
         </span>
       </div>
 
-      <div className="rounded-3xl border border-[#d5ff4e]/25 bg-[#d5ff4e]/10 p-4">
+      <div className="rounded-[8px] border border-[#d5ff4e]/25 bg-[#d5ff4e]/10 p-4">
         <div className="flex items-start gap-3">
           <div className="flex-1">
             <p className="text-sm font-bold text-white">Fill from screenshot</p>
@@ -721,7 +721,7 @@ export function DashboardShell({
               uploaded image.
             </p>
           </div>
-          <label className="cursor-pointer rounded-2xl bg-[#d5ff4e] px-3 py-2 text-xs font-black text-[#101812] hover:bg-[#e2ff82]">
+          <label className="cursor-pointer rounded-[8px] bg-[#d5ff4e] px-3 py-2 text-xs font-black text-[#101812] hover:bg-[#e2ff82]">
             {isExtractingScreenshot ? "Reading..." : "Upload image"}
             <input
               type="file"
@@ -736,7 +736,7 @@ export function DashboardShell({
           <img
             src={screenshotPreview}
             alt="Uploaded ride screenshot"
-            className="mt-3 max-h-48 w-full rounded-2xl object-contain"
+            className="mt-3 max-h-48 w-full rounded-[8px] object-contain"
           />
         ) : null}
         {extractionError ? (
@@ -760,7 +760,7 @@ export function DashboardShell({
                 pickupDistance: event.target.value,
               }))
             }
-            className="w-full rounded-2xl border border-white/10 bg-black/20 px-3 py-2 text-white outline-none ring-0 focus:border-[#d5ff4e]"
+            className="w-full rounded-[8px] border border-white/10 bg-black/20 px-3 py-2 text-white outline-none ring-0 focus:border-[#d5ff4e]"
           />
         </label>
         <label className="space-y-1 text-sm text-slate-300">
@@ -776,7 +776,7 @@ export function DashboardShell({
                 customerDistance: event.target.value,
               }))
             }
-            className="w-full rounded-2xl border border-white/10 bg-black/20 px-3 py-2 text-white outline-none ring-0 focus:border-[#d5ff4e]"
+            className="w-full rounded-[8px] border border-white/10 bg-black/20 px-3 py-2 text-white outline-none ring-0 focus:border-[#d5ff4e]"
           />
         </label>
         <label className="space-y-1 text-sm text-slate-300">
@@ -792,7 +792,7 @@ export function DashboardShell({
                 extraDistance: event.target.value,
               }))
             }
-            className="w-full rounded-2xl border border-white/10 bg-black/20 px-3 py-2 text-white outline-none ring-0 focus:border-[#d5ff4e]"
+            className="w-full rounded-[8px] border border-white/10 bg-black/20 px-3 py-2 text-white outline-none ring-0 focus:border-[#d5ff4e]"
           />
         </label>
         <label className="space-y-1 text-sm text-slate-300">
@@ -808,12 +808,12 @@ export function DashboardShell({
                 ridePrice: event.target.value,
               }))
             }
-            className="w-full rounded-2xl border border-white/10 bg-black/20 px-3 py-2 text-white outline-none ring-0 focus:border-[#d5ff4e]"
+            className="w-full rounded-[8px] border border-white/10 bg-black/20 px-3 py-2 text-white outline-none ring-0 focus:border-[#d5ff4e]"
           />
         </label>
       </div>
 
-      <div className="rounded-2xl border border-white/10 bg-black/20 p-3">
+      <div className="rounded-[8px] border border-white/10 bg-black/20 p-3">
         <div className="mb-2 text-sm text-slate-300">AC status</div>
         <div className="flex gap-2">
           <button
@@ -821,7 +821,7 @@ export function DashboardShell({
             onClick={() =>
               setRequest((current) => ({ ...current, acUsed: true }))
             }
-            className={`flex-1 rounded-2xl border px-3 py-2 text-sm font-medium ${
+            className={`flex-1 rounded-[8px] border px-3 py-2 text-sm font-medium ${
               request.acUsed
                 ? "border-[#d5ff4e] bg-[#d5ff4e]/10 text-[#d5ff4e]"
                 : "border-white/10 bg-white/5 text-white/55"
@@ -834,7 +834,7 @@ export function DashboardShell({
             onClick={() =>
               setRequest((current) => ({ ...current, acUsed: false }))
             }
-            className={`flex-1 rounded-2xl border px-3 py-2 text-sm font-medium ${
+            className={`flex-1 rounded-[8px] border px-3 py-2 text-sm font-medium ${
               !request.acUsed
                 ? "border-[#d5ff4e] bg-[#d5ff4e]/10 text-[#d5ff4e]"
                 : "border-white/10 bg-white/5 text-white/55"
@@ -856,7 +856,7 @@ export function DashboardShell({
             onChange={(event) =>
               setRequest((current) => ({ ...current, tip: event.target.value }))
             }
-            className="w-full rounded-2xl border border-slate-700 bg-slate-950 px-3 py-2 text-white outline-none ring-0"
+            className="w-full rounded-[8px] border border-slate-700 bg-slate-950 px-3 py-2 text-white outline-none ring-0"
           />
         </label>
         <label className="space-y-1 text-sm text-slate-300">
@@ -872,7 +872,7 @@ export function DashboardShell({
                 parking: event.target.value,
               }))
             }
-            className="w-full rounded-2xl border border-slate-700 bg-slate-950 px-3 py-2 text-white outline-none ring-0"
+            className="w-full rounded-[8px] border border-slate-700 bg-slate-950 px-3 py-2 text-white outline-none ring-0"
           />
         </label>
         <label className="space-y-1 text-sm text-slate-300">
@@ -888,7 +888,7 @@ export function DashboardShell({
                 toll: event.target.value,
               }))
             }
-            className="w-full rounded-2xl border border-slate-700 bg-slate-950 px-3 py-2 text-white outline-none ring-0"
+            className="w-full rounded-[8px] border border-slate-700 bg-slate-950 px-3 py-2 text-white outline-none ring-0"
           />
         </label>
         <label className="space-y-1 text-sm text-slate-300">
@@ -904,12 +904,12 @@ export function DashboardShell({
                 otherExpense: event.target.value,
               }))
             }
-            className="w-full rounded-2xl border border-slate-700 bg-slate-950 px-3 py-2 text-white outline-none ring-0"
+            className="w-full rounded-[8px] border border-slate-700 bg-slate-950 px-3 py-2 text-white outline-none ring-0"
           />
         </label>
       </div>
 
-      <div className="rounded-2xl border border-[#d5ff4e]/20 bg-[#d5ff4e]/5 p-3">
+      <div className="rounded-[8px] border border-[#d5ff4e]/20 bg-[#d5ff4e]/5 p-3">
         <div className="mb-2 text-sm font-medium text-[#d5ff4e]">
           Ride Summary
         </div>
@@ -942,7 +942,7 @@ export function DashboardShell({
       <button
         type="button"
         onClick={handleSaveRide}
-        className="w-full rounded-2xl bg-[#d5ff4e] px-4 py-3 text-base font-black text-[#101812] transition hover:bg-[#e2ff82]"
+        className="w-full rounded-[8px] bg-[#d5ff4e] px-4 py-3 text-base font-black text-[#101812] transition hover:bg-[#e2ff82]"
       >
         {editingRideId ? "Update Ride" : "Save Ride"}
       </button>
@@ -953,7 +953,7 @@ export function DashboardShell({
             setEditingRideId(null);
             setSection("history");
           }}
-          className="w-full rounded-2xl border border-white/15 px-4 py-3 text-sm font-bold text-white/60"
+          className="w-full rounded-[8px] border border-white/15 px-4 py-3 text-sm font-bold text-white/60"
         >
           Cancel edit
         </button>
@@ -962,7 +962,7 @@ export function DashboardShell({
   );
 
   const renderHistory = () => (
-    <div className="space-y-5 rounded-[30px] border border-white/10 bg-[#111d1a]/90 p-4 shadow-xl shadow-black/10">
+    <div className="space-y-5 rounded-[8px] border border-white/10 bg-[#111d1a]/90 p-4 shadow-xl shadow-black/10">
       <div className="flex items-center justify-between">
         <h2 className="text-lg font-semibold text-white">Ride History</h2>
         <span className="rounded-full bg-white/10 px-2 py-1 text-[10px] font-bold uppercase tracking-[0.2em] text-white/60">
@@ -971,14 +971,14 @@ export function DashboardShell({
       </div>
 
       {activeRides.length === 0 ? (
-        <div className="rounded-2xl border border-dashed border-slate-700 bg-slate-950/50 p-4 text-sm text-slate-300">
+        <div className="rounded-[8px] border border-dashed border-slate-700 bg-slate-950/50 p-4 text-sm text-slate-300">
           No rides saved yet.
         </div>
       ) : (
         activeRides.map((ride) => (
           <div
             key={ride.id}
-            className="rounded-2xl border border-white/10 bg-black/20 p-3"
+            className="rounded-[8px] border border-white/10 bg-black/20 p-3"
           >
             <div className="flex items-center justify-between text-sm text-slate-300">
               <span>{new Date(ride.createdAt).toLocaleDateString()}</span>
@@ -1027,7 +1027,7 @@ export function DashboardShell({
           </span>
         </div>
         {deletedRides.length === 0 ? (
-          <p className="rounded-2xl border border-dashed border-white/10 p-3 text-xs text-white/35">
+          <p className="rounded-[8px] border border-dashed border-white/10 p-3 text-xs text-white/35">
             No deleted rides.
           </p>
         ) : (
@@ -1035,7 +1035,7 @@ export function DashboardShell({
             {deletedRides.map((ride) => (
               <div
                 key={ride.id}
-                className="flex items-center justify-between rounded-2xl border border-rose-200/15 bg-rose-200/5 p-3"
+                className="flex items-center justify-between rounded-[8px] border border-rose-200/15 bg-rose-200/5 p-3"
               >
                 <div>
                   <p className="text-sm font-semibold text-white/75">
@@ -1068,7 +1068,7 @@ export function DashboardShell({
   );
 
   const renderSettings = () => (
-    <div className="space-y-5 rounded-[30px] border border-white/10 bg-[#111d1a]/90 p-4 shadow-xl shadow-black/10">
+    <div className="space-y-5 rounded-[8px] border border-white/10 bg-[#111d1a]/90 p-4 shadow-xl shadow-black/10">
       <div className="flex items-center justify-between">
         <div>
           <p className="text-[10px] font-bold uppercase tracking-[0.2em] text-[#d5ff4e]">
@@ -1079,13 +1079,13 @@ export function DashboardShell({
         <button
           type="button"
           onClick={handleSaveSettings}
-          className="rounded-full bg-[#d5ff4e] px-3 py-2 text-xs font-black uppercase tracking-[0.2em] text-[#101812]"
+          className="rounded-[8px] bg-[#d5ff4e] px-3 py-2 text-xs font-black uppercase tracking-[0.2em] text-[#101812]"
         >
           Save
         </button>
       </div>
 
-      <div className="grid grid-cols-3 gap-1 rounded-2xl bg-black/20 p-1">
+      <div className="grid grid-cols-3 gap-1 rounded-[8px] bg-black/20 p-1">
         {[
           ["fuel", "Fuel price"],
           ["commission", "Commission"],
@@ -1116,7 +1116,7 @@ export function DashboardShell({
 
       {settingsTab === "fuel" ? (
         <div className="space-y-4">
-          <div className="rounded-3xl border border-[#d5ff4e]/25 bg-[#d5ff4e]/10 p-5">
+          <div className="rounded-[8px] border border-[#d5ff4e]/25 bg-[#d5ff4e]/10 p-5">
             <p className="text-[10px] font-bold uppercase tracking-[0.22em] text-[#d5ff4e]">
               Current petrol price
             </p>
@@ -1138,7 +1138,7 @@ export function DashboardShell({
                   petrolPrice: Number(event.target.value) || 0,
                 }))
               }
-              className="w-full rounded-2xl border border-slate-700 bg-slate-950 px-3 py-2 text-white"
+              className="w-full rounded-[8px] border border-slate-700 bg-slate-950 px-3 py-2 text-white"
             />
           </label>
         </div>
@@ -1146,7 +1146,7 @@ export function DashboardShell({
 
       {settingsTab === "commission" ? (
         <div className="space-y-4">
-          <div className="rounded-3xl border border-white/10 bg-white/5 p-5">
+          <div className="rounded-[8px] border border-white/10 bg-white/5 p-5">
             <p className="text-[10px] font-bold uppercase tracking-[0.22em] text-white/45">
               Platform deduction
             </p>
@@ -1171,7 +1171,7 @@ export function DashboardShell({
                   commissionPercentage: Number(event.target.value) || 0,
                 }))
               }
-              className="w-full rounded-2xl border border-slate-700 bg-slate-950 px-3 py-2 text-white"
+              className="w-full rounded-[8px] border border-slate-700 bg-slate-950 px-3 py-2 text-white"
             />
           </label>
         </div>
@@ -1179,7 +1179,7 @@ export function DashboardShell({
 
       {settingsTab === "cars" ? (
         <div className="space-y-4">
-          <div className="rounded-3xl border border-white/10 bg-white/5 p-4">
+          <div className="rounded-[8px] border border-white/10 bg-white/5 p-4">
             <div className="mb-3 flex items-center justify-between">
               <div>
                 <p className="text-sm font-bold text-white">Create a car</p>
@@ -1203,7 +1203,7 @@ export function DashboardShell({
                       name: event.target.value,
                     }))
                   }
-                  className="w-full rounded-2xl border border-slate-700 bg-slate-950 px-3 py-2 text-sm text-white"
+                  className="w-full rounded-[8px] border border-slate-700 bg-slate-950 px-3 py-2 text-sm text-white"
                 />
               </label>
               <label className="space-y-1 text-xs font-semibold text-white/65">
@@ -1217,7 +1217,7 @@ export function DashboardShell({
                       model: event.target.value,
                     }))
                   }
-                  className="w-full rounded-2xl border border-slate-700 bg-slate-950 px-3 py-2 text-sm text-white"
+                  className="w-full rounded-[8px] border border-slate-700 bg-slate-950 px-3 py-2 text-sm text-white"
                 />
               </label>
               <label className="space-y-1 text-xs font-semibold text-white/65">
@@ -1234,7 +1234,7 @@ export function DashboardShell({
                       mileageWithoutAC: event.target.value,
                     }))
                   }
-                  className="w-full rounded-2xl border border-slate-700 bg-slate-950 px-3 py-2 text-sm text-white"
+                  className="w-full rounded-[8px] border border-slate-700 bg-slate-950 px-3 py-2 text-sm text-white"
                 />
               </label>
               <label className="space-y-1 text-xs font-semibold text-white/65">
@@ -1251,21 +1251,21 @@ export function DashboardShell({
                       mileageWithAC: event.target.value,
                     }))
                   }
-                  className="w-full rounded-2xl border border-slate-700 bg-slate-950 px-3 py-2 text-sm text-white"
+                  className="w-full rounded-[8px] border border-slate-700 bg-slate-950 px-3 py-2 text-sm text-white"
                 />
               </label>
             </div>
             <button
               type="button"
               onClick={handleCreateCar}
-              className="mt-3 w-full rounded-2xl bg-[#d5ff4e] px-4 py-3 text-sm font-black text-[#101812]"
+              className="mt-3 w-full rounded-[8px] bg-[#d5ff4e] px-4 py-3 text-sm font-black text-[#101812]"
             >
               Create car
             </button>
           </div>
 
           {selectedCar ? (
-            <div className="overflow-hidden rounded-3xl border border-[#d5ff4e]/35 bg-[#d5ff4e]/10">
+            <div className="overflow-hidden rounded-[8px] border border-[#d5ff4e]/35 bg-[#d5ff4e]/10">
               <img
                 src={selectedCar.imageUrl}
                 alt={selectedCar.model}
@@ -1287,14 +1287,14 @@ export function DashboardShell({
 
           <div className="space-y-3">
             {cars.length === 0 ? (
-              <p className="rounded-2xl border border-dashed border-white/15 p-4 text-sm text-white/45">
+              <p className="rounded-[8px] border border-dashed border-white/15 p-4 text-sm text-white/45">
                 No cars saved yet.
               </p>
             ) : null}
             {cars.map((car) => (
               <div
                 key={car.id}
-                className="flex items-center gap-3 rounded-2xl border border-white/10 bg-black/20 p-3"
+                className="flex items-center gap-3 rounded-[8px] border border-white/10 bg-black/20 p-3"
               >
                 <img
                   src={car.imageUrl}
@@ -1328,7 +1328,7 @@ export function DashboardShell({
             <img
               src="/indrive-favicon.png"
               alt="InDrive"
-              className="h-12 w-12 rounded-2xl object-cover shadow-lg shadow-black/20"
+              className="h-12 w-12 rounded-[8px] object-cover shadow-lg shadow-black/20"
             />
             <div>
               <p className="text-[10px] font-black uppercase tracking-[0.22em] text-[#56756a]">
@@ -1340,7 +1340,7 @@ export function DashboardShell({
             </div>
           </div>
           <div className="flex items-center gap-2">
-            <div className="rounded-[8px] border border-[#9fbdad] bg-[#edf6f0]/70 px-3 py-2 text-right">
+            <div className="hidden md:block rounded-[8px] border border-[#9fbdad] bg-[#edf6f0]/70 px-3 py-2 text-right">
               <p className="text-[9px] font-bold uppercase tracking-[0.12em] text-[#668176]">
                 Fuel price
               </p>
@@ -1375,9 +1375,9 @@ export function DashboardShell({
                         : "Preferences"}
                 </h2>
               </div>
-              <span className="hidden rounded-full border border-[#b8d2c4] bg-[#edf6f0] px-3 py-1 text-xs text-[#668176] sm:block">
+              {/* <span className="hidden rounded-full border border-[#b8d2c4] bg-[#edf6f0] px-3 py-1 text-xs text-[#668176] sm:block">
                 {user.username}
-              </span>
+              </span> */}
             </div>
             {section === "overview" && renderOverview()}
             {section === "add" && renderAddRide()}
@@ -1385,7 +1385,7 @@ export function DashboardShell({
             {section === "settings" && renderSettings()}
           </div>
 
-          <nav className="rounded-[30px] border border-white/10 bg-[#111d1a]/90 p-2 shadow-xl shadow-black/10 lg:sticky lg:top-6">
+          <nav className="rounded-[8px] border border-white/10 bg-[#111d1a]/90 p-2 mb-10 shadow-xl shadow-black/10 lg:sticky lg:top-6">
             <div className="mb-2 flex items-center justify-between px-3 py-2">
               <h2 className="text-sm font-bold text-white">Quick actions</h2>
               <span className="text-[10px] font-bold uppercase tracking-[0.16em] text-white/30">
@@ -1396,7 +1396,7 @@ export function DashboardShell({
             <button
               type="button"
               onClick={() => setSection("overview")}
-              className={`w-full rounded-2xl px-3 py-3 text-left text-sm font-semibold transition ${
+              className={`w-full rounded-[8px] px-3 py-3 text-left text-sm font-semibold transition ${
                 section === "overview"
                   ? "bg-[#d5ff4e] text-[#101812]"
                   : "text-white/55 hover:bg-white/5 hover:text-white"
@@ -1407,7 +1407,7 @@ export function DashboardShell({
             <button
               type="button"
               onClick={() => setSection("add")}
-              className={`w-full rounded-2xl px-3 py-3 text-left text-sm font-semibold transition ${
+              className={`w-full rounded-[8px] px-3 py-3 text-left text-sm font-semibold transition ${
                 section === "add"
                   ? "bg-[#d5ff4e] text-[#101812]"
                   : "text-white/55 hover:bg-white/5 hover:text-white"
@@ -1418,7 +1418,7 @@ export function DashboardShell({
             <button
               type="button"
               onClick={() => setSection("history")}
-              className={`w-full rounded-2xl px-3 py-3 text-left text-sm font-semibold transition ${
+              className={`w-full rounded-[8px] px-3 py-3 text-left text-sm font-semibold transition ${
                 section === "history"
                   ? "bg-[#d5ff4e] text-[#101812]"
                   : "text-white/55 hover:bg-white/5 hover:text-white"
@@ -1429,7 +1429,7 @@ export function DashboardShell({
             <button
               type="button"
               onClick={() => setSection("settings")}
-              className={`w-full rounded-2xl px-3 py-3 text-left text-sm font-semibold transition ${
+              className={`w-full rounded-[8px] px-3 py-3 text-left text-sm font-semibold transition ${
                 section === "settings"
                   ? "bg-[#d5ff4e] text-[#101812]"
                   : "text-white/55 hover:bg-white/5 hover:text-white"
@@ -1470,21 +1470,21 @@ export function DashboardShell({
                   step="0.01"
                   value={petrolPromptValue}
                   onChange={(event) => setPetrolPromptValue(event.target.value)}
-                  className="mt-2 w-full rounded-2xl border border-white/15 bg-black/20 px-4 py-3 text-xl font-bold text-white outline-none focus:border-[#d5ff4e]"
+                  className="mt-2 w-full rounded-[8px] border border-white/15 bg-black/20 px-4 py-3 text-xl font-bold text-white outline-none focus:border-[#d5ff4e]"
                 />
               </label>
               <div className="mt-5 flex gap-2">
                 <button
                   type="button"
                   onClick={() => setShowPetrolPrompt(false)}
-                  className="flex-1 rounded-2xl border border-white/15 px-4 py-3 text-sm font-bold text-white/65 hover:bg-white/10"
+                  className="flex-1 rounded-[8px] border border-white/15 px-4 py-3 text-sm font-bold text-white/65 hover:bg-white/10"
                 >
                   Cancel
                 </button>
                 <button
                   type="button"
                   onClick={() => void handlePetrolPromptSave()}
-                  className="flex-1 rounded-2xl bg-[#d5ff4e] px-4 py-3 text-sm font-black text-[#101812]"
+                  className="flex-1 rounded-[8px] bg-[#d5ff4e] px-4 py-3 text-sm font-black text-[#101812]"
                 >
                   Save price
                 </button>
@@ -1509,7 +1509,7 @@ export function DashboardShell({
                 <button
                   type="button"
                   onClick={() => setDeleteCandidate(null)}
-                  className="flex-1 rounded-2xl border border-white/15 px-4 py-3 text-sm font-bold text-white/65"
+                  className="flex-1 rounded-[8px] border border-white/15 px-4 py-3 text-sm font-bold text-white/65"
                 >
                   Cancel
                 </button>
@@ -1519,7 +1519,7 @@ export function DashboardShell({
                     await handleRideFlag(deleteCandidate, "delete");
                     setDeleteCandidate(null);
                   }}
-                  className="flex-1 rounded-2xl bg-rose-400 px-4 py-3 text-sm font-black text-[#24100e]"
+                  className="flex-1 rounded-[8px] bg-rose-400 px-4 py-3 text-sm font-black text-[#24100e]"
                 >
                   Delete ride
                 </button>
@@ -1545,7 +1545,7 @@ export function DashboardShell({
                 <button
                   type="button"
                   onClick={() => setRecoverCandidate(null)}
-                  className="flex-1 rounded-2xl border border-white/15 px-4 py-3 text-sm font-bold text-white/65"
+                  className="flex-1 rounded-[8px] border border-white/15 px-4 py-3 text-sm font-bold text-white/65"
                 >
                   Cancel
                 </button>
@@ -1555,7 +1555,7 @@ export function DashboardShell({
                     await handleRideFlag(recoverCandidate, "recover");
                     setRecoverCandidate(null);
                   }}
-                  className="flex-1 rounded-2xl bg-[#d5ff4e] px-4 py-3 text-sm font-black text-[#101812]"
+                  className="flex-1 rounded-[8px] bg-[#d5ff4e] px-4 py-3 text-sm font-black text-[#101812]"
                 >
                   Recover ride
                 </button>
@@ -1612,13 +1612,13 @@ export function DashboardShell({
                           [field]: event.target.value,
                         }))
                       }
-                      className="w-full rounded-2xl border border-white/10 bg-black/20 px-3 py-2 text-sm text-white outline-none focus:border-[#d5ff4e]"
+                      className="w-full rounded-[8px] border border-white/10 bg-black/20 px-3 py-2 text-sm text-white outline-none focus:border-[#d5ff4e]"
                     />
                   </label>
                 ))}
               </div>
 
-              <div className="mt-4 rounded-2xl border border-white/10 bg-black/20 p-3">
+              <div className="mt-4 rounded-[8px] border border-white/10 bg-black/20 p-3">
                 <p className="mb-2 text-xs font-bold uppercase tracking-[0.16em] text-white/45">
                   AC status
                 </p>
@@ -1644,7 +1644,7 @@ export function DashboardShell({
                 </div>
               </div>
 
-              <div className="mt-4 rounded-2xl border border-[#d5ff4e]/20 bg-[#d5ff4e]/5 p-4 text-sm text-white/70">
+              <div className="mt-4 rounded-[8px] border border-[#d5ff4e]/20 bg-[#d5ff4e]/5 p-4 text-sm text-white/70">
                 <div className="flex justify-between">
                   <span>Total distance</span>
                   <strong>{summary.totalDistance.toFixed(1)} km</strong>
@@ -1664,7 +1664,7 @@ export function DashboardShell({
               <button
                 type="button"
                 onClick={() => void handleSaveRide()}
-                className="mt-5 w-full rounded-2xl bg-[#d5ff4e] px-4 py-3 text-sm font-black text-[#101812]"
+                className="mt-5 w-full rounded-[8px] bg-[#d5ff4e] px-4 py-3 text-sm font-black text-[#101812]"
               >
                 Save changes
               </button>
